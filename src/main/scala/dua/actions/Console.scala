@@ -1,5 +1,6 @@
 package dua.actions
 
+import dua.wizards.CharacterWizard
 import dua.{DuaMessages, DuaStatus}
 
 import scala.io.StdIn
@@ -12,5 +13,10 @@ object Console {
     val retValue = ! "n".equals(response.toLowerCase)
     if (retValue) println(DuaMessages.getMessage("console.quit.bye"))
     retValue
+  }
+  
+  def createCharacter()(using duaStatus: DuaStatus): Boolean = {
+    CharacterWizard.execute
+    true
   }
 }

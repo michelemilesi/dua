@@ -8,7 +8,7 @@ Example: `roll 2d6+1`, `r d6`
 ### Phase 1 - MVP - v0.1.0
 1. [X] Roll dice
 2. [X] Languages (IT/EN)
-3. [ ] Adventure time (round, days, calendar...)
+3. [X] Adventure time (round, days, calendar...)
 4. [ ] Create character
    1. [X] Race Half Elf
    2. [X] Race Human

@@ -15,6 +15,7 @@ object DuaInterpreter {
 //        println(s"rolled $rolled")
 //        true
       case "quit" => !quit()
+      case "new" => createCharacter()
       case _ =>
         println(f"""Unknown command: "${line}"!""")
         true

@@ -15,5 +15,3 @@ ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" 
 ThisBuild / coverageFailOnMinimum := true
 ThisBuild / coverageMinimumStmtTotal := 80
 ThisBuild / coverageMinimumBranchTotal := 80
-
-

@@ -1,12 +1,8 @@
 package dua
 
 trait Race {
-  def getName(using DuaStatus): String
-  def getPluralName(using DuaStatus): String
-  def getFemaleName(using DuaStatus): String
-  def getMaleName(using DuaStatus): String
-  def getPluralFemaleName(using DuaStatus): String
-  def getPluralMaleName(using DuaStatus): String
+  def getName(sex: Option[Sex] = None)(using DuaStatus): String
+  def getPluralName(sex: Option[Sex] = None)(using DuaStatus): String
   def getRaceAbilities: Abilities = Abilities()
   def getRaceAbilitiesOnChoice: List[Int] = List.empty[Int]
   def getRaceSkills: Int = 0
@@ -19,7 +15,7 @@ trait Race {
   def getDarkVisionRange: Int = 0
 }
 
-abstract class AbstractRace(name: String) extends Race {
+abstract class AbstractRace(name: String) extends Race, Printable {
   protected val TEXT_SINGULAR = "singular"
   protected val TEXT_PLURAL = "plural"
   protected val TEXT_SINGULAR_MALE = "singular.male"
@@ -27,23 +23,25 @@ abstract class AbstractRace(name: String) extends Race {
   protected val TEXT_PLURAL_MALE = "plural.male"
   protected val TEXT_PLURAL_FEMALE = "plural.female"
 
-  override def getName(using DuaStatus): String =
-    DuaMessages.getMessage(f"${name}.${TEXT_SINGULAR}")
+  override def getName(sex: Option[Sex] = None)(using DuaStatus): String = sex match {
+    case Some(Sex.M) => DuaMessages.getMessage(f"${name}.${TEXT_SINGULAR_MALE}")
+    case Some(Sex.F) => DuaMessages.getMessage(f"${name}.${TEXT_SINGULAR_FEMALE}")
+    case _ => DuaMessages.getMessage(f"${name}.${TEXT_SINGULAR}")
+  }
 
-  override def getPluralName(using DuaStatus): String =
-    DuaMessages.getMessage(f"${name}.${TEXT_PLURAL}")
 
-  override def getFemaleName(using DuaStatus): String =
-    DuaMessages.getMessage(f"${name}.${TEXT_SINGULAR_FEMALE}")
+  override def getPluralName(sex: Option[Sex] = None)(using DuaStatus): String = sex match {
+    case Some(Sex.M) => DuaMessages.getMessage(f"${name}.${TEXT_PLURAL_MALE}")
+    case Some(Sex.F) => DuaMessages.getMessage(f"${name}.${TEXT_PLURAL_FEMALE}")
+    case _ => DuaMessages.getMessage(f"${name}.${TEXT_PLURAL}")
+  }
 
-  override def getMaleName(using DuaStatus): String =
-    DuaMessages.getMessage(f"${name}.${TEXT_SINGULAR_MALE}")
 
-  override def getPluralFemaleName(using DuaStatus): String =
-    DuaMessages.getMessage(f"${name}.${TEXT_PLURAL_FEMALE}")
-
-  override def getPluralMaleName(using DuaStatus): String =
-    DuaMessages.getMessage(f"${name}.${TEXT_PLURAL_MALE}")
+  override def print(variant: Option[Any] = None)(using status:DuaStatus): String = variant match {
+    case Some(Sex.M) => getName(sex = Some(Sex.M))
+    case Some(Sex.F) => getName(sex = Some(Sex.F))
+    case _ => getName()
+  }
 }
 
 class Human extends AbstractRace("human") {
@@ -64,4 +62,5 @@ class HalfElf extends AbstractRace("half-elf") {
 object Race {
   val HUMAN = new Human()
   val HALF_ELF = new HalfElf()
+  val RACES: List[Race] = List(HUMAN, HALF_ELF)
 }

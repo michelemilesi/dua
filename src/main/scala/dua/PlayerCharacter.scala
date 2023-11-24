@@ -25,14 +25,15 @@ case class PlayerCharacter(var name: Option[String] = None, var race: Option[Rac
       case _ => (0, 0, 0)
     abilities match {
       case Some(abs) =>
+        val ac = 10 + inventory.ac + abs.mod(DEX)
         println(f"${Abilities.getShortText(STR)}: ${abs.str}%2d (${abs.mod(STR)}%+2d) PF $hpCurr%3d/$hpMax%3d (Temp $hpTemp%3d)")
-        println(f"${Abilities.getShortText(DEX)}: ${abs.dex}%2d (${abs.mod(DEX)}%+2d)")
+        println(f"${Abilities.getShortText(DEX)}: ${abs.dex}%2d (${abs.mod(DEX)}%+2d) AC $ac%2d" )
         println(f"${Abilities.getShortText(CON)}: ${abs.con}%2d (${abs.mod(CON)}%+2d)")
         println(f"${Abilities.getShortText(INT)}: ${abs.int}%2d (${abs.mod(INT)}%+2d)")
         println(f"${Abilities.getShortText(WIS)}: ${abs.wis}%2d (${abs.mod(WIS)}%+2d)")
         println(f"${Abilities.getShortText(CHA)}: ${abs.cha}%2d (${abs.mod(CHA)}%+2d)")
         println("------------------------------------------------------------")
-        println(f"MO: ${inventory.coins.gold}%3d MA: ${inventory.coins.silver}%3d MR: ${inventory.coins.copper}%3d Peso: ${inventory.weight}%3.2f")
+        println(f"MO: ${inventory.coins.gold}%3d MA: ${inventory.coins.silver}%3d MR: ${inventory.coins.copper}%3d Peso: ${inventory.weight.toKg}%3.2f")
       case _ => println("")
     }
   }

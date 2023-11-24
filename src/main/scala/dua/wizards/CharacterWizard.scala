@@ -31,8 +31,7 @@ class CharacterWizard {
     }
     character.characterClass = characterClass
 
-    val abilities = selectAbilities()
-    character.abilities = abilities
+    character.abilities = selectAbilities(character.race.get)
 
     val clazz = character.characterClass.get
     character.hp = Some(HitPoint(level = 1, dice = clazz.getHitPointDice,
@@ -109,46 +108,60 @@ class CharacterWizard {
       case _ => None
   }
 
-  def selectAbilities()(using status: DuaStatus) : Option[Abilities] = {
-    def pool =  (for (_ <-1 to 6) yield DiceRoll.roll(4, 6).skipWorst()).sortWith((a, b) => a > b).toList
+  private def selectAbilities(race: Race)(using status: DuaStatus) : Option[Abilities] = {
 
-    val raceAbs = character.race.get.getRaceAbilities
+    def printAbilitiesChoice(abilities: Abilities, abilitiesMods: Abilities, pool: List[Int], headMessage: String): (Abilities, List[Int]) = {
+      println(DuaMessages.getMessage(headMessage, pool.mkString("[", " ", "]")))
+      val abs_names = List(STR, DEX, CON, INT, WIS, CHA)
+      var pos = 1
+      abs_names.foreach(ab => {
+        val value = abilities.get(ab)
+        val opt = if (value == 0) {
+          f"$pos"
+        } else {
+          " "
+        }
+        pos = pos + 1
+        println(f"$opt) ${Abilities.getText(ab).capitalize}%20s: " +
+          f"${abilities.get(ab)}%2d + ${abilitiesMods.get(ab)}%2d = ${abilities.get(ab) + abilitiesMods.get(ab)}%2d")
+      })
+
+      print(f"${DuaMessages.getMessage("wiz.character.abilities.next_value", pool.head)} > ")
+
+      StdIn.readLine match {
+        case "1" if abilities.str == 0 => (abilities.modify(Abilities(str = pool.head)), pool.tail)
+        case "2" if abilities.dex == 0 => (abilities.modify(Abilities(dex = pool.head)), pool.tail)
+        case "3" if abilities.con == 0 => (abilities.modify(Abilities(con = pool.head)), pool.tail)
+        case "4" if abilities.int == 0 => (abilities.modify(Abilities(int = pool.head)), pool.tail)
+        case "5" if abilities.wis == 0 => (abilities.modify(Abilities(wis = pool.head)), pool.tail)
+        case "6" if abilities.cha == 0 => (abilities.modify(Abilities(cha = pool.head)), pool.tail)
+        case _ => (abilities, pool)
+      }
+    }
 
     @tailrec
-    def selectAbilities(abs: Abilities, pool: List[Int]) : Abilities =
+    def chooseAbilities(abs: Abilities, choice: List[Int]) : Abilities =
+      if (choice.isEmpty) {
+        abs
+      } else {
+        val (newAbs, newPool) = printAbilitiesChoice(abs, Abilities(), choice, "wiz.character.abilities.select")
+        chooseAbilities(newAbs, newPool)
+      }
+
+    @tailrec
+    def selectAbilities(abs: Abilities, raceAbs: Abilities,pool: List[Int]) : Abilities =
       if (pool.isEmpty) {
         abs
       } else {
-        println(DuaMessages.getMessage("wiz.character.abilities.pool", pool.mkString("[", " ", "]")))
-        val abs_names = List(STR, DEX, CON, INT, WIS, CHA)
-        var pos = 1
-        abs_names.foreach(ab => {
-          val value = abs.get(ab)
-          val opt = if (value == 0) {
-            f"$pos"
-          } else {
-            " "
-          }
-          pos = pos + 1
-          println(f"$opt) ${Abilities.getText(ab).capitalize}%20s: " +
-            f"${abs.get(ab)}%2d + ${raceAbs.get(ab)}%2d = ${abs.get(ab) + raceAbs.get(ab)}%2d")
-        })
-
-        print(f"${DuaMessages.getMessage("wiz.character.abilities.next_value", pool.head)} > ")
-
-        val (newAbs, newPool) = StdIn.readLine match {
-          case "1" if abs.str == 0 => (abs.modify(Abilities(str = pool.head)), pool.tail)
-          case "2" if abs.dex == 0 => (abs.modify(Abilities(dex = pool.head)), pool.tail)
-          case "3" if abs.con == 0 => (abs.modify(Abilities(con = pool.head)), pool.tail)
-          case "4" if abs.int == 0 => (abs.modify(Abilities(int = pool.head)), pool.tail)
-          case "5" if abs.wis == 0 => (abs.modify(Abilities(wis = pool.head)), pool.tail)
-          case "6" if abs.cha == 0 => (abs.modify(Abilities(cha = pool.head)), pool.tail)
-          case _ => (abs, pool)
-        }
-        selectAbilities(newAbs, newPool)
+        val (newAbs, newPool) = printAbilitiesChoice(abs, raceAbs, pool, "wiz.character.abilities.pool")
+        selectAbilities(newAbs, raceAbs, newPool)
       }
 
-    Some(selectAbilities(Abilities(), pool).modify(raceAbs))
+    val raceAbs = chooseAbilities(race.getRaceAbilities, race.getRaceAbilitiesOnChoice)
+
+    def pool =  (for (_ <-1 to 6) yield DiceRoll.roll(4, 6).skipWorst()).sortWith((a, b) => a > b).toList
+
+    Some(selectAbilities(Abilities(), raceAbs, pool).modify(raceAbs))
   }
 
   private def selectName()(using status: DuaStatus): Option[String] = {

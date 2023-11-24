@@ -13,6 +13,7 @@ trait Race {
   def getAdvantages: List[String] = List.empty[String]
   def getHandicaps: List[String] = List.empty[String]
   def getDarkVisionRange: Int = 0
+  
 }
 
 abstract class AbstractRace(name: String) extends Race, Printable {

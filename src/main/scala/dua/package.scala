@@ -4,4 +4,8 @@ package object dua {
     
   enum Sex:
     case M, F, N
+
+  enum Proficiency:
+    case LIGHT_ARMORS, MEDIUM_ARMORS, HEAVY_ARMORS, SHIELDS,
+    SIMPLE_WEAPONS, MARTIAL_WEAPONS
 }

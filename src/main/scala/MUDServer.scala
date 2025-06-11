@@ -1,56 +1,51 @@
+import akka.actor.typed.ActorSystem
 import java.net.{ServerSocket, Socket}
-import java.io.{PrintWriter, BufferedReader, InputStreamReader}
-import scala.util.{Try, Success, Failure}
+import scala.util.{Try, Failure}
 import scala.io.AnsiColor
+import scala.concurrent.{Await, ExecutionContext} // Aggiunti
+import scala.concurrent.duration._ // Aggiunto
 
 object MUDServer {
 
   def using[R <: AutoCloseable, A](resource: R)(block: R => A): Try[A] = {
     val result = Try(block(resource))
-
-    Try(resource.close()) match {
-      case Failure(exception) =>
-        println(s"${AnsiColor.YELLOW}[LOG] Attenzione: la risorsa non è stata chiusa correttamente. Errore: ${exception.getMessage}${AnsiColor.RESET}")
-      case Success(_) =>
-      // Chiusura avvenuta con successo.
+    Try(resource.close()).failed.foreach { exception =>
+      println(s"${AnsiColor.YELLOW}[LOG] Attenzione: risorsa non chiusa. Errore: ${exception.getMessage}${AnsiColor.RESET}")
     }
-
     result
   }
 
   def main(args: Array[String]): Unit = {
-    val port = 4000
+    println("Avvio del sistema MUD 'dua'...")
+    val system: ActorSystem[ServerActor.Command] = ActorSystem(ServerActor(), "dua-mud-system")
 
-    val serverExecution = using(new ServerSocket(port)) { serverSocket =>
-      println(s"${AnsiColor.GREEN}[*] Il server MUD 'dua' è in ascolto sulla porta $port${AnsiColor.RESET}")
+    // Otteniamo l'ExecutionContext dal sistema, necessario per Await
+    implicit val ec: ExecutionContext = system.executionContext
 
-      while (true) {
-        val clientSocket = serverSocket.accept()
-        println(s"[*] Nuova connessione da: ${clientSocket.getInetAddress}")
-        handleClient(clientSocket)
-      }
-    }
+    try {
+      // Questa parte è la novità principale
+      println(s"${AnsiColor.CYAN}>>> Server avviato. Premi INVIO per terminare. <<<${AnsiColor.RESET}")
 
-    serverExecution match {
-      case Failure(exception) =>
-        println(s"${AnsiColor.RED}[!] Errore critico del server: ${exception.getMessage}${AnsiColor.RESET}")
-      case Success(_) =>
-    }
-  }
+      // 1. Blocca il thread main finché non viene premuto INVIO sulla console
+      scala.io.StdIn.readLine()
 
-  def handleClient(socket: Socket): Unit = {
-    val clientHandling = using(socket) { client =>
-      val out = new PrintWriter(client.getOutputStream, true)
-      val in = new BufferedReader(new InputStreamReader(client.getInputStream))
+      println("Avvio procedura di spegnimento...")
 
-      out.println("Benvenuto nel nostro MUD in Scala! Grandi avventure ti attendono!")
-    }
+      // 2. Avvia lo spegnimento gentile dell'ActorSystem
+      system.terminate()
 
-    clientHandling match {
-      case Success(_) =>
-        println(s"${AnsiColor.GREEN}[*] Connessione con ${socket.getInetAddress} chiusa regolarmente.${AnsiColor.RESET}")
-      case Failure(exception) =>
-        println(s"${AnsiColor.YELLOW}[!] Connessione con ${socket.getInetAddress} terminata con errore: ${exception.getMessage}${AnsiColor.RESET}")
+      // 3. Attendi che il sistema sia completamente terminato
+      //    Questo assicura che tutti gli attori abbiano finito il loro lavoro prima di uscire.
+      //    Diamo un tempo massimo di attesa (es. 30 secondi).
+      Await.ready(system.whenTerminated, 30.seconds)
+
+      println("Sistema MUD terminato.")
+
+    } catch {
+      case e: Exception =>
+        println(s"${AnsiColor.RED}Errore imprevisto nel main: ${e.getMessage}${AnsiColor.RESET}")
+        system.terminate()
+        Await.ready(system.whenTerminated, 30.seconds)
     }
   }
 }

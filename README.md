@@ -1,4 +1,4 @@
-# DUA - Dungeons &amp; Dragons Unlimited Adventure
+# DUA - Dungeons &amp; Dragons Unlimited Adventures
 
 
 ## Todo

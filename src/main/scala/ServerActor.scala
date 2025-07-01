@@ -2,6 +2,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors} // Import ActorContext
 import java.net.{ServerSocket, Socket}
 import scala.concurrent.Future
+import java.io.{BufferedReader, InputStreamReader, PrintWriter}
 
 object ServerActor {
   // --- Messaggi che l'attore può ricevere ---
@@ -54,10 +55,15 @@ object ServerActor {
       case NewConnection(socket) =>
         context.log.info(s"Nuova connessione gestita per ${socket.getInetAddress}")
 
-        // QUI ORA POSSIAMO USARE CONTEXT.SPAWN PERCHÉ LO ABBIAMO PASSATO COME PARAMETRO
-        context.spawn(PlayerActor(socket), s"player-${socket.getPort}")
+        // Creiamo le risorse dal socket
+        val writer = new PrintWriter(socket.getOutputStream, true)
+        val reader = new BufferedReader(new InputStreamReader(socket.getInputStream))
 
-        Behaviors.same // Continua con questo comportamento per accettare altre connessioni
+        // Creiamo gli attori passando le risorse di cui hanno bisogno
+        val socketWriter = context.spawn(SocketWriter(writer), s"writer-${socket.getPort}")
+        context.spawn(PlayerActor(socketWriter, reader), s"player-${socket.getPort}")
+
+        Behaviors.same
 
       case ServerFailed(error) =>
         context.log.error("Errore del server durante l'esecuzione. L'attore si fermerà.", error)
